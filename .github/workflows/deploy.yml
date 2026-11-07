@@ -1,0 +1,115 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'host.json'
+      - 'infra/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+# OIDC: nenhum segredo de longa duração no GitHub.
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION || 'southafricanorth' }}
+  KEY_VAULT_LOCATION: ${{ vars.KEY_VAULT_LOCATION || 'southafricanorth' }}
+  MONITORING_LOCATION: ${{ vars.MONITORING_LOCATION || 'southafricanorth' }}
+  COSMOS_LOCATION: ${{ vars.COSMOS_LOCATION || 'southafricanorth' }}
+  RELATORIO_CRON: ${{ vars.RELATORIO_CRON || '0 0 8 * * MON' }}
+  TIMEZONE: ${{ vars.TIMEZONE || 'America/Sao_Paulo' }}
+  ENABLE_COSMOS_FREE_TIER: ${{ vars.ENABLE_COSMOS_FREE_TIER || 'true' }}
+
+jobs:
+  deploy:
+    name: Provisionar e publicar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Compilar, testar e empacotar
+        run: mvn -B clean package
+
+      - name: Autenticar no Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Provisionar infraestrutura (Bicep)
+        id: infra
+        env:
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          ACS_SENDER: ${{ vars.ACS_SENDER }}
+        run: |
+          set -euo pipefail
+          outputs=$(az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "feedback-${GITHUB_RUN_NUMBER}" \
+            --template-file infra/main.bicep \
+            --parameters \
+                adminEmails="$ADMIN_EMAILS" \
+                acsSender="$ACS_SENDER" \
+                relatorioCron="$RELATORIO_CRON" \
+                timezone="$TIMEZONE" \
+                location="$AZURE_LOCATION" \
+                keyVaultLocation="$KEY_VAULT_LOCATION" \
+                monitoringLocation="$MONITORING_LOCATION" \
+                cosmosLocation="$COSMOS_LOCATION" \
+                enableCosmosFreeTier="$ENABLE_COSMOS_FREE_TIER" \
+            --query 'properties.outputs' \
+            --output json)
+
+          echo "$outputs" | jq -r '"functionAppName=" + .functionAppName.value' >> "$GITHUB_OUTPUT"
+          echo "$outputs" | jq -r '"functionAppUrl=" + .functionAppUrl.value' >> "$GITHUB_OUTPUT"
+          echo "$outputs" | jq -r '"keyVaultName=" + .keyVaultName.value' >> "$GITHUB_OUTPUT"
+
+      - name: Empacotar artefato do Functions
+        run: |
+          set -euo pipefail
+          cd target/azure-functions/func-feedback-fase4
+          zip -r "$GITHUB_WORKSPACE/functionapp.zip" .
+
+      - name: Publicar código no Function App
+        uses: azure/functions-action@v1
+        with:
+          app-name: ${{ steps.infra.outputs.functionAppName }}
+          package: ./functionapp.zip
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
+
+      - name: Resumo do deploy
+        if: success()
+        run: |
+          {
+            echo "## Deploy concluído"
+            echo ""
+            echo "| Item | Valor |"
+            echo "|---|---|"
+            echo "| Function App | \`${{ steps.infra.outputs.functionAppName }}\` |"
+            echo "| Endpoint | \`${{ steps.infra.outputs.functionAppUrl }}/api/avaliacao\` |"
+            echo "| Key Vault | \`${{ steps.infra.outputs.keyVaultName }}\` |"
+            echo "| Resource Group | \`$RESOURCE_GROUP\` |"
+            echo ""
+            echo "> O segredo \`acs-connection-string\` é gravado uma única vez pelo script local \`scripts/deploy.ps1\`."
+          } >> "$GITHUB_STEP_SUMMARY"

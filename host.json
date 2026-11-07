@@ -1,0 +1,30 @@
+{
+  "version": "2.0",
+  "functionTimeout": "00:05:00",
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
+  },
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "maxTelemetryItemsPerSecond": 20,
+        "excludedTypes": "Request;Exception"
+      }
+    },
+    "logLevel": {
+      "default": "Information",
+      "br.com.fiap.feedback": "Information",
+      "com.azure": "Warning"
+    }
+  },
+  "extensions": {
+    "queues": {
+      "batchSize": 1,
+      "maxDequeueCount": 5,
+      "maxPollingInterval": "00:00:05",
+      "messageEncoding": "none"
+    }
+  }
+}

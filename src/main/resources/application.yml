@@ -1,0 +1,24 @@
+spring:
+  main:
+    web-application-type: none
+    banner-mode: off
+
+feedback:
+  cosmos-endpoint: ${COSMOS_ENDPOINT:}
+  cosmos-key: ${COSMOS_KEY:}
+  cosmos-database: ${COSMOS_DATABASE:feedback}
+  cosmos-container: ${COSMOS_CONTAINER:avaliacoes}
+  storage-queue-endpoint: ${STORAGE_QUEUE_ENDPOINT:}
+  storage-connection-string: ${STORAGE_CONNECTION_STRING:}
+  queue-name: ${NOTIFICACOES_QUEUE:avaliacoes-criticas}
+  acs-connection-string: ${ACS_CONNECTION_STRING:}
+  acs-sender: ${ACS_SENDER:}
+  admin-emails: ${ADMIN_EMAILS:}
+  timezone: ${TZ:America/Sao_Paulo}
+  app-insights-connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:}
+
+logging:
+  level:
+    root: INFO
+    br.com.fiap.feedback: INFO
+    com.azure: WARN

@@ -1,0 +1,28 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+    "MAIN_CLASS": "br.com.fiap.feedback.FeedbackApplication",
+    "TZ": "America/Sao_Paulo",
+    "JAVA_OPTS": "-XX:+UseSerialGC -XX:MaxRAMPercentage=75",
+
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+
+    "COSMOS_ENDPOINT": "",
+    "COSMOS_KEY": "",
+    "COSMOS_DATABASE": "feedback",
+    "COSMOS_CONTAINER": "avaliacoes",
+
+    "STORAGE_QUEUE_ENDPOINT": "",
+    "STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "NOTIFICACOES_QUEUE": "avaliacoes-criticas",
+
+    "ACS_CONNECTION_STRING": "",
+    "ACS_SENDER": "DoNotReply@<guid>.azurecomm.net",
+
+    "ADMIN_EMAILS": "admin@example.com",
+    "RELATORIO_CRON": "0 0 8 * * MON",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": ""
+  }
+}
