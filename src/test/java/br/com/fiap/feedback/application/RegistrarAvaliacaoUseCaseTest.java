@@ -62,11 +62,10 @@ class RegistrarAvaliacaoUseCaseTest {
         ArgumentCaptor<Avaliacao> captor = ArgumentCaptor.forClass(Avaliacao.class);
         verify(repository).salvar(captor.capture());
         Avaliacao salva = captor.getValue();
-        assertThat(salva.getDescricao()).isEqualTo("Aula excelente");
-        assertThat(salva.getNota()).isEqualTo(9);
-        assertThat(salva.getUrgencia()).isEqualTo(Urgencia.BAIXA);
-        assertThat(salva.getData()).isEqualTo("2026-11-06");
-        assertThat(salva.getTtl()).isEqualTo(31_536_000);
+        assertThat(salva.descricao()).isEqualTo("Aula excelente");
+        assertThat(salva.nota()).isEqualTo(9);
+        assertThat(salva.urgencia()).isEqualTo(Urgencia.BAIXA);
+        assertThat(salva.data()).isEqualTo("2026-11-06");
 
         verify(queue, never()).enfileirar(any());
     }
@@ -92,7 +91,7 @@ class RegistrarAvaliacaoUseCaseTest {
 
         ArgumentCaptor<Avaliacao> captor = ArgumentCaptor.forClass(Avaliacao.class);
         verify(repository).salvar(captor.capture());
-        assertThat(captor.getValue().getData()).isEqualTo("2026-11-06");
+        assertThat(captor.getValue().data()).isEqualTo("2026-11-06");
     }
 
     @Test

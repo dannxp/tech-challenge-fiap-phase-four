@@ -73,6 +73,8 @@ class GerarRelatorioSemanalUseCaseTest {
         assertThat(relatorio.geradoEm()).isEqualTo(AGORA);
         assertThat(relatorio.total()).isEqualTo(3);
         assertThat(relatorio.media()).isCloseTo(6.0, within(0.001));
+        assertThat(relatorio.avaliacoes()).extracting(Avaliacao::id)
+                .containsExactly("3", "2", "1");
 
         assertThat(relatorio.porDia()).hasSize(7);
         assertThat(relatorio.porDia().get(LocalDate.of(2026, 10, 31))).isZero();
@@ -127,6 +129,8 @@ class GerarRelatorioSemanalUseCaseTest {
 
     private Avaliacao avaliacao(String id, String dataEnvio, String data,
                                 int nota, Urgencia urgencia) {
-        return new Avaliacao(id, "Aula " + id, nota, urgencia, dataEnvio, data, 31_536_000);
+        return new Avaliacao(
+                id, "Aula " + id, nota, urgencia,
+                Instant.parse(dataEnvio), LocalDate.parse(data));
     }
 }

@@ -63,13 +63,12 @@ public class GerarRelatorioSemanalUseCase {
         LocalDate inicio = hoje.minusDays(6);
 
         List<Avaliacao> avaliacoes = repository.buscarPorPeriodo(inicio, hoje);
-        if (avaliacoes == null) {
-            avaliacoes = List.of();
-        }
 
+        // Mais recentes primeiro (null-safe por robustez, nunca deve ocorrer).
         List<Avaliacao> ordenadas = new ArrayList<>(avaliacoes);
         ordenadas.sort(Comparator.comparing(
-                (Avaliacao a) -> a.getDataEnvio() == null ? "" : a.getDataEnvio()));
+                Avaliacao::dataEnvio,
+                Comparator.nullsLast(Comparator.reverseOrder())));
 
         Map<LocalDate, Long> porDia = new LinkedHashMap<>();
         for (LocalDate dia = inicio; !dia.isAfter(hoje); dia = dia.plusDays(1)) {
@@ -83,12 +82,12 @@ public class GerarRelatorioSemanalUseCase {
 
         long somaNotas = 0;
         for (Avaliacao avaliacao : ordenadas) {
-            LocalDate dia = avaliacao.dataLocal();
+            LocalDate dia = avaliacao.data();
             if (dia != null && porDia.containsKey(dia)) {
                 porDia.merge(dia, 1L, Long::sum);
             }
-            porUrgencia.merge(avaliacao.getUrgencia(), 1L, Long::sum);
-            somaNotas += avaliacao.getNota();
+            porUrgencia.merge(avaliacao.urgencia(), 1L, Long::sum);
+            somaNotas += avaliacao.nota();
         }
 
         long total = ordenadas.size();

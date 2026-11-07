@@ -17,11 +17,11 @@ public record NotificacaoMensagem(
 
     public static NotificacaoMensagem de(Avaliacao avaliacao, int tentativa) {
         return new NotificacaoMensagem(
-                avaliacao.getId(),
-                avaliacao.getDescricao(),
-                avaliacao.getNota(),
-                avaliacao.getUrgencia().name(),
-                avaliacao.getDataEnvio(),
+                avaliacao.id(),
+                avaliacao.descricao(),
+                avaliacao.nota(),
+                avaliacao.urgencia().name(),
+                avaliacao.dataEnvio().toString(),
                 tentativa);
     }
 

@@ -18,7 +18,7 @@ public enum Urgencia {
         this.descricao = descricao;
     }
 
-    public String getDescricao() {
+    public String descricao() {
         return descricao;
     }
 

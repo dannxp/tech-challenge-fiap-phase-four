@@ -12,7 +12,6 @@ import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.models.SqlParameter;
-import br.com.fiap.feedback.infrastructure.AzureCredentials;
 import com.azure.cosmos.models.SqlQuerySpec;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -24,10 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repositório Cosmos DB (SQL API).
+ * Repositório Cosmos DB (SQL API) — adaptador de saída da porta
+ * {@code AvaliacaoRepository}.
  *
  * <p>Autenticação: Managed Identity em produção; {@code COSMOS_KEY} apenas para
- * desenvolvimento local (o Bicep desabilita chaves locais na conta).</p>
+ * desenvolvimento local (o Bicep desabilita chaves locais na conta). O TTL de
+ * cada item é política deste adaptador, outbound ao domínio.</p>
  */
 @Repository
 public class CosmosAvaliacaoRepository implements AvaliacaoRepository {
@@ -45,14 +46,16 @@ public class CosmosAvaliacaoRepository implements AvaliacaoRepository {
 
     @Override
     public void salvar(Avaliacao avaliacao) {
+        AvaliacaoDocument documento =
+                AvaliacaoDocumentMapper.paraDocumento(avaliacao, properties.avaliacaoTtlSegundos());
         try {
             container().createItem(
-                    avaliacao,
-                    new PartitionKey(avaliacao.getData()),
+                    documento,
+                    new PartitionKey(documento.partitionKey()),
                     new CosmosItemRequestOptions());
         } catch (CosmosException e) {
             throw new RepositoryException(
-                    "Falha ao salvar a avaliação " + avaliacao.getId()
+                    "Falha ao salvar a avaliação " + avaliacao.id()
                             + " no Cosmos DB (status " + e.getStatusCode() + ").", e);
         }
     }
@@ -67,8 +70,9 @@ public class CosmosAvaliacaoRepository implements AvaliacaoRepository {
         List<Avaliacao> avaliacoes = new ArrayList<>();
         try {
             container()
-                    .queryItems(query, new CosmosQueryRequestOptions(), Avaliacao.class)
-                    .forEach(avaliacoes::add);
+                    .queryItems(query, new CosmosQueryRequestOptions(), AvaliacaoDocument.class)
+                    .forEach(documento -> avaliacoes.add(
+                            AvaliacaoDocumentMapper.paraEntidade(documento)));
         } catch (CosmosException e) {
             throw new RepositoryException(
                     "Falha ao consultar avaliações no Cosmos DB (status "

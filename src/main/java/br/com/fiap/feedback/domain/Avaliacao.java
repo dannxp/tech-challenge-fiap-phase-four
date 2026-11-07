@@ -1,104 +1,87 @@
 package br.com.fiap.feedback.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.UUID;
 
 /**
- * Documento persistido no Cosmos DB.
+ * Avaliação de aula — entidade de domínio.
  *
- * <p>O {@code dataEnvio} é UTC (ISO-8601) e o {@code data} é a data local de
- * São Paulo usada como partition key e para agrupar o relatório.</p>
+ * <p>Valor imutável que não conhece Jackson nem Cosmos DB: a representação
+ * persistida fica em {@code infrastructure.cosmos.AvaliacaoDocument}, e o TTL
+ * é política do repositório, não da entidade.</p>
+ *
+ * <p>{@code dataEnvio} é o instante de recebimento (UTC) e {@code data} é o dia
+ * local (fuso configurado) usado para agrupar o relatório semanal e como
+ * partition key lógica.</p>
+ *
+ * @param id        identificador único (UUID)
+ * @param descricao texto enviado pelo aluno (trim, até {@link #DESCRICAO_MAXIMA} caracteres)
+ * @param nota      nota de {@link #NOTA_MINIMA} a {@link #NOTA_MAXIMA}
+ * @param urgencia  urgência derivada da nota
+ * @param dataEnvio instante de recebimento (UTF)
+ * @param data      dia local (fuso configurado) do recebimento
  */
-public class Avaliacao {
+public record Avaliacao(
+        String id,
+        String descricao,
+        int nota,
+        Urgencia urgencia,
+        Instant dataEnvio,
+        LocalDate data) {
 
-    private String id;
-    private String descricao;
-    private int nota;
-    private Urgencia urgencia;
-    private String dataEnvio;
-    private String data;
-    private Integer ttl;
+    public static final int NOTA_MINIMA = 0;
+    public static final int NOTA_MAXIMA = 10;
+    public static final int DESCRICAO_MAXIMA = 1000;
 
-    public Avaliacao() {
-        // Jackson / Cosmos DB
+    /**
+     * Cria uma avaliação validada, com id, instante de envio e dia local
+     * derivados do relógio/fuso informados.
+     *
+     * @throws ValidacaoException se descrição ou nota forem inválidos
+     */
+    public static Avaliacao criar(String descricao, Integer nota, Clock clock, ZoneId zoneId) {
+        String descricaoValida = validarDescricao(descricao);
+        int notaValida = validarNota(nota);
+
+        Instant agora = clock.instant();
+        return new Avaliacao(
+                UUID.randomUUID().toString(),
+                descricaoValida,
+                notaValida,
+                UrgenciaCalculator.calcular(notaValida),
+                agora,
+                LocalDate.ofInstant(agora, zoneId));
     }
 
-    public Avaliacao(String id, String descricao, int nota, Urgencia urgencia,
-                     String dataEnvio, String data, Integer ttl) {
-        this.id = id;
-        this.descricao = descricao;
-        this.nota = nota;
-        this.urgencia = urgencia;
-        this.dataEnvio = dataEnvio;
-        this.data = data;
-        this.ttl = ttl;
+    /**
+     * @throws ValidacaoException se nula, em branco ou acima do limite de caracteres
+     */
+    static String validarDescricao(String descricao) {
+        if (descricao == null || descricao.isBlank()) {
+            throw new ValidacaoException("O campo 'descricao' é obrigatório.");
+        }
+        String normalizada = descricao.trim();
+        if (normalizada.length() > DESCRICAO_MAXIMA) {
+            throw new ValidacaoException(
+                    "O campo 'descricao' deve ter no máximo " + DESCRICAO_MAXIMA + " caracteres.");
+        }
+        return normalizada;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
-
-    public int getNota() {
+    /**
+     * @throws ValidacaoException se nula ou fora do intervalo {@link #NOTA_MINIMA}–{@link #NOTA_MAXIMA}
+     */
+    static int validarNota(Integer nota) {
+        if (nota == null) {
+            throw new ValidacaoException("O campo 'nota' é obrigatório.");
+        }
+        if (nota < NOTA_MINIMA || nota > NOTA_MAXIMA) {
+            throw new ValidacaoException(
+                    "O campo 'nota' deve ser um inteiro entre " + NOTA_MINIMA + " e " + NOTA_MAXIMA + ".");
+        }
         return nota;
-    }
-
-    public void setNota(int nota) {
-        this.nota = nota;
-    }
-
-    public Urgencia getUrgencia() {
-        return urgencia;
-    }
-
-    public void setUrgencia(Urgencia urgencia) {
-        this.urgencia = urgencia;
-    }
-
-    public String getDataEnvio() {
-        return dataEnvio;
-    }
-
-    public void setDataEnvio(String dataEnvio) {
-        this.dataEnvio = dataEnvio;
-    }
-
-    public String getData() {
-        return data;
-    }
-
-    public void setData(String data) {
-        this.data = data;
-    }
-
-    public Integer getTtl() {
-        return ttl;
-    }
-
-    public void setTtl(Integer ttl) {
-        this.ttl = ttl;
-    }
-
-    @JsonIgnore
-    public Instant dataEnvioInstant() {
-        return dataEnvio == null ? null : Instant.parse(dataEnvio);
-    }
-
-    @JsonIgnore
-    public LocalDate dataLocal() {
-        return data == null ? null : LocalDate.parse(data);
     }
 }

@@ -56,6 +56,48 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Detectar recursos existentes
+        id: existing
+        run: |
+          set -euo pipefail
+
+          function_app_name=$(az functionapp list \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "[?starts_with(name, 'func-feedback-fase4')].name | [0]" \
+            --output tsv)
+
+          plan_name="asp-feedback-fase4"
+          deploy_roles="true"
+
+          if [ -n "$function_app_name" ]; then
+            plan_id=$(az functionapp list \
+              --resource-group "$RESOURCE_GROUP" \
+              --query "[?name=='$function_app_name'].serverFarmId | [0]" \
+              --output tsv)
+            if [ -n "$plan_id" ]; then
+              plan_name="${plan_id##*/}"
+            fi
+
+            principal_id=$(az functionapp identity show \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$function_app_name" \
+              --query principalId \
+              --output tsv)
+            if [ -n "$principal_id" ]; then
+              role_count=$(az role assignment list \
+                --assignee "$principal_id" \
+                --all \
+                --query "[?roleDefinitionName=='Storage Queue Data Contributor' || roleDefinitionName=='Key Vault Secrets User'].roleDefinitionName" \
+                --output tsv | wc -l)
+              if [ "$role_count" -ge 2 ]; then
+                deploy_roles="false"
+              fi
+            fi
+          fi
+
+          echo "planName=$plan_name" >> "$GITHUB_OUTPUT"
+          echo "deployRoles=$deploy_roles" >> "$GITHUB_OUTPUT"
+
       - name: Provisionar infraestrutura (Bicep)
         id: infra
         env:
@@ -76,6 +118,8 @@ jobs:
                 keyVaultLocation="$KEY_VAULT_LOCATION" \
                 monitoringLocation="$MONITORING_LOCATION" \
                 cosmosLocation="$COSMOS_LOCATION" \
+                planName="${{ steps.existing.outputs.planName }}" \
+                deployRoles="${{ steps.existing.outputs.deployRoles }}" \
                 enableCosmosFreeTier="$ENABLE_COSMOS_FREE_TIER" \
             --query 'properties.outputs' \
             --output json)

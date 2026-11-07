@@ -54,7 +54,7 @@ public class EmailTemplateRenderer implements EmailFactory {
         String html = render(templateCritico, Map.of(
                 "descricao", escapeHtml(mensagem.descricao()),
                 "urgencia", urgencia.name(),
-                "urgenciaDescricao", escapeHtml(urgencia.getDescricao()),
+                "urgenciaDescricao", escapeHtml(urgencia.descricao()),
                 "nota", String.valueOf(mensagem.nota()),
                 "dataEnvio", dataFormatada,
                 "id", mensagem.id()));
@@ -126,13 +126,13 @@ public class EmailTemplateRenderer implements EmailFactory {
         for (Avaliacao avaliacao : relatorio.avaliacoes()) {
             sb.append("<tr>")
                     .append("<td style=\"padding:6px 10px;border-bottom:1px solid #e5e7eb;white-space:nowrap;\">")
-                    .append(formatarDataHora(avaliacao.getDataEnvio()))
+                    .append(formatarDataHora(avaliacao.dataEnvio()))
                     .append("</td><td style=\"padding:6px 10px;border-bottom:1px solid #e5e7eb;\">")
-                    .append(avaliacao.getUrgencia().name())
+                    .append(avaliacao.urgencia().name())
                     .append("</td><td style=\"padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;\">")
-                    .append(avaliacao.getNota())
+                    .append(avaliacao.nota())
                     .append("</td><td style=\"padding:6px 10px;border-bottom:1px solid #e5e7eb;\">")
-                    .append(escapeHtml(avaliacao.getDescricao()))
+                    .append(escapeHtml(avaliacao.descricao()))
                     .append("</td></tr>");
         }
         return sb.toString();
@@ -158,10 +158,10 @@ public class EmailTemplateRenderer implements EmailFactory {
         } else {
             for (Avaliacao avaliacao : relatorio.avaliacoes()) {
                 sb.append("  ")
-                        .append(formatarDataHora(avaliacao.getDataEnvio())).append(" | ")
-                        .append(avaliacao.getUrgencia().name()).append(" | ")
-                        .append(avaliacao.getNota()).append("/10 | ")
-                        .append(avaliacao.getDescricao()).append("\n");
+                        .append(formatarDataHora(avaliacao.dataEnvio())).append(" | ")
+                        .append(avaliacao.urgencia().name()).append(" | ")
+                        .append(avaliacao.nota()).append("/10 | ")
+                        .append(avaliacao.descricao()).append("\n");
             }
         }
 

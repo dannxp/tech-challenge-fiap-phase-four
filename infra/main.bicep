@@ -10,7 +10,7 @@ targetScope = 'resourceGroup'
 //  - Log Analytics + Application Insights
 //  - Function App Linux Flex Consumption (Java 21) + Managed Identity
 //  - Role assignments (Cosmos, Storage Queue, Key Vault)
-//  - Action Group + alerta HTTP 5xx
+//  - Action Group para notificações operacionais
 //
 // Nenhum segredo é versionado. A connection string do ACS entra no Key Vault
 // via scripts/deploy.ps1 e é referenciada com @Microsoft.KeyVault(...).
@@ -52,11 +52,16 @@ param tags object = {
   environment: 'demo'
 }
 
+@description('Nome do plano Flex Consumption. Em atualizações, use o plano já associado ao Function App.')
+param planName string = 'asp-feedback-fase4'
+
+@description('Cria as atribuições RBAC. Desabilite ao reutilizar uma identidade já provisionada.')
+param deployRoles bool = true
+
 var storageAccountName = toLower(take('stfeedbackfase4${nameSuffix}', 24))
 var cosmosAccountName = take('cosmos-f4-${nameSuffix}', 44)
 var keyVaultName = take('kv-f4-${nameSuffix}', 24)
 var functionAppName = take('func-feedback-fase4-${nameSuffix}', 60)
-var planName = 'asp-feedback-fase4'
 var logAnalyticsName = 'log-feedback-fase4'
 var appInsightsName = 'appi-feedback-fase4'
 var actionGroupName = 'ag-feedback-fase4'
@@ -135,7 +140,7 @@ module functionAppModule './modules/function-app.bicep' = {
   }
 }
 
-module rolesModule './modules/roles.bicep' = {
+module rolesModule './modules/roles.bicep' = if (deployRoles) {
   name: 'roles'
   params: {
     functionPrincipalId: functionAppModule.outputs.principalId
@@ -150,7 +155,6 @@ module alertsModule './modules/alerts.bicep' = {
   params: {
     actionGroupName: actionGroupName
     adminEmails: adminEmails
-    functionAppId: functionAppModule.outputs.id
     tags: tags
   }
 }

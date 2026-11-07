@@ -24,8 +24,15 @@ public record FeedbackProperties(
         String acsSender,
         List<String> adminEmails,
         String timezone,
-        String appInsightsConnectionString
+        String appInsightsConnectionString,
+        int avaliacaoTtlSegundos,
+        int notificacaoMaxTentativas
 ) {
+
+    /** TTL padrão das avaliações no Cosmos DB: 365 dias, em segundos. */
+    static final int TTL_PADRAO = 365 * 24 * 60 * 60;
+    /** Máximo padrão de retentativas de envio por rate limit do ACS. */
+    static final int MAX_TENTATIVAS_PADRAO = 5;
 
     public FeedbackProperties {
         cosmosDatabase = valorOuPadrao(cosmosDatabase, "feedback");
@@ -39,6 +46,10 @@ public record FeedbackProperties(
                         .map(String::trim)
                         .filter(email -> !email.isEmpty())
                         .toList();
+        avaliacaoTtlSegundos = avaliacaoTtlSegundos <= 0 ? TTL_PADRAO : avaliacaoTtlSegundos;
+        notificacaoMaxTentativas = notificacaoMaxTentativas <= 0
+                ? MAX_TENTATIVAS_PADRAO
+                : notificacaoMaxTentativas;
     }
 
     private static String valorOuPadrao(String valor, String padrao) {

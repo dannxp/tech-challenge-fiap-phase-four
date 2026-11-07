@@ -150,6 +150,39 @@ try {
         Invoke-Az -Arguments @('group', 'create', '--name', $ResourceGroup, '--location', $Location, '--only-show-errors') | Out-Null
     }
 
+    $existingFunctionAppName = & $script:AzCli functionapp list `
+        --resource-group $ResourceGroup `
+        --query "[?starts_with(name, 'func-feedback-fase4')].name | [0]" `
+        --output tsv
+    $planName = 'asp-feedback-fase4'
+    $deployRoles = $true
+    if (-not [string]::IsNullOrWhiteSpace($existingFunctionAppName)) {
+        $existingPlanId = & $script:AzCli functionapp list `
+            --resource-group $ResourceGroup `
+            --query "[?name=='$existingFunctionAppName'].serverFarmId | [0]" `
+            --output tsv
+        if (-not [string]::IsNullOrWhiteSpace($existingPlanId)) {
+            $planName = Split-Path $existingPlanId -Leaf
+            Write-Host "==> Reutilizando o plano do Function App existente: $planName" -ForegroundColor Yellow
+        }
+        $existingPrincipalId = & $script:AzCli functionapp identity show `
+            --resource-group $ResourceGroup `
+            --name $existingFunctionAppName `
+            --query principalId `
+            --output tsv
+        if (-not [string]::IsNullOrWhiteSpace($existingPrincipalId)) {
+            $existingRoles = @(& $script:AzCli role assignment list `
+                --assignee $existingPrincipalId `
+                --all `
+                --query "[?roleDefinitionName=='Storage Queue Data Contributor' || roleDefinitionName=='Key Vault Secrets User'].roleDefinitionName" `
+                --output tsv)
+            if ($existingRoles.Count -ge 2) {
+                $deployRoles = $false
+                Write-Host '==> Reutilizando as atribuições RBAC existentes.' -ForegroundColor Yellow
+            }
+        }
+    }
+
     if (-not $SkipPackage) {
         Write-Host '==> Compilando e empacotando (mvn clean package)' -ForegroundColor Cyan
         & mvn -B clean package
@@ -172,6 +205,8 @@ try {
                      "keyVaultLocation=$KeyVaultLocation" `
                      "monitoringLocation=$MonitoringLocation" `
                      "cosmosLocation=$CosmosLocation" `
+                     "planName=$planName" `
+                     "deployRoles=$($deployRoles.ToString().ToLower())" `
                      "enableCosmosFreeTier=$($EnableCosmosFreeTier.ToString().ToLower())" `
         --query 'properties.outputs' `
         --output json `

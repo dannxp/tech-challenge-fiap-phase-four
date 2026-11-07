@@ -68,9 +68,9 @@ class EmailTemplateRendererTest {
 
         List<Avaliacao> avaliacoes = List.of(
                 new Avaliacao("1", "Aula confusa", 2, Urgencia.CRITICA,
-                        "2026-11-04T12:00:00Z", "2026-11-04", 31_536_000),
+                        Instant.parse("2026-11-04T12:00:00Z"), LocalDate.of(2026, 11, 4)),
                 new Avaliacao("2", "Aula ótima", 9, Urgencia.BAIXA,
-                        "2026-11-06T12:00:00Z", "2026-11-06", 31_536_000));
+                        Instant.parse("2026-11-06T12:00:00Z"), LocalDate.of(2026, 11, 6)));
 
         RelatorioSemanal relatorio = new RelatorioSemanal(
                 inicio, fim, Instant.parse("2026-11-06T12:00:00Z"),

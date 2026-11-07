@@ -7,6 +7,7 @@ import br.com.fiap.feedback.application.port.EmailSendException;
 import br.com.fiap.feedback.application.port.EmailSender;
 import br.com.fiap.feedback.application.port.NotificacaoQueue;
 import br.com.fiap.feedback.application.port.Telemetry;
+import br.com.fiap.feedback.config.FeedbackProperties;
 import br.com.fiap.feedback.domain.NotificacaoMensagem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,8 @@ class NotificarCriticoUseCaseTest {
     void setUp() {
         useCase = new NotificarCriticoUseCase(
                 emailSender, queue, emailFactory,
-                new AdminEmails(List.of("admin@example.com")), telemetry);
+                new AdminEmails(List.of("admin@example.com")), telemetry,
+                propertiesPadrao());
 
         mensagem = new NotificacaoMensagem(
                 "id-1", "Aula confusa", 2, "CRITICA",
@@ -98,10 +100,21 @@ class NotificarCriticoUseCaseTest {
     void falhaQuandoNaoHaAdminConfigurado() {
         NotificarCriticoUseCase semAdmin = new NotificarCriticoUseCase(
                 emailSender, queue, emailFactory,
-                new AdminEmails(List.of()), telemetry);
+                new AdminEmails(List.of()), telemetry,
+                propertiesPadrao());
 
         assertThatThrownBy(() -> semAdmin.notificar(mensagem))
                 .isInstanceOf(EmailSendException.class)
                 .hasMessageContaining("ADMIN_EMAILS");
+    }
+
+    /**
+     * Properties com apenas os valores relevantes para este caso de uso;
+     * os demais caem nos defaults do construtor compacto.
+     */
+    private FeedbackProperties propertiesPadrao() {
+        return new FeedbackProperties(
+                null, null, null, null, null, null, null, null, null,
+                List.of(), null, null, 0, 5);
     }
 }

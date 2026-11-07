@@ -16,6 +16,8 @@ feedback:
   admin-emails: ${ADMIN_EMAILS:}
   timezone: ${TZ:America/Sao_Paulo}
   app-insights-connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:}
+  avaliacao-ttl-segundos: ${AVALIACAO_TTL_SEGUNDOS:31536000}
+  notificacao-max-tentativas: ${NOTIFICACAO_MAX_TENTATIVAS:5}
 
 logging:
   level:
