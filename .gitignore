@@ -37,6 +37,7 @@ buildNumber.properties
 
 # Azure Functions
 local.settings.json
+docs/roteiro-video.txt
 .local.settings/
 .azure/
 azure-functions/
@@ -68,5 +69,6 @@ bin/
 Thumbs.db
 desktop.ini
 
-# Documentação interna (não publicada no repo; o README mantém a visão geral)
-docs/
+# Materiais pessoais e arquivos gerados
+docs/roteiro-video.txt
+docs/pdf/
