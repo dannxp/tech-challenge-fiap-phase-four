@@ -34,6 +34,18 @@ ou
 
 Sem a chave, a resposta é `401 Unauthorized`.
 
+## Swagger UI
+
+A API também disponibiliza uma interface Swagger para executar as requisições:
+
+```text
+https://<function-app-host>/api/swagger
+```
+
+Na interface, clique em **Authorize**, informe a Function Key no campo
+`x-functions-key` e depois use **Try it out** no endpoint de avaliação. O
+contrato OpenAPI bruto está em `/api/openapi.yaml`.
+
 > A chave é obtida em **Function App → App keys → default**, ou com:
 >
 > ```powershell

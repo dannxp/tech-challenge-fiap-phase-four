@@ -1,0 +1,99 @@
+openapi: 3.0.3
+info:
+  title: Plataforma de Feedback de Aulas
+  description: API para registrar avaliações de aulas e classificar sua urgência.
+  version: 1.0.0
+servers:
+  - url: /
+    description: Ambiente atual
+paths:
+  /api/avaliacao:
+    post:
+      summary: Registra uma avaliação
+      operationId: registrarAvaliacao
+      security:
+        - functionKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarAvaliacaoCommand'
+            examples:
+              avaliacaoNormal:
+                summary: Avaliação não crítica
+                value:
+                  descricao: Aula excelente e bem explicada
+                  nota: 9
+              avaliacaoCritica:
+                summary: Avaliação crítica
+                value:
+                  descricao: Não entendi o conteúdo da aula
+                  nota: 2
+      responses:
+        '201':
+          description: Avaliação recebida e persistida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvaliacaoResponse'
+        '400':
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '401':
+          description: Function key ausente ou inválida
+        '500':
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+components:
+  securitySchemes:
+    functionKey:
+      type: apiKey
+      in: header
+      name: x-functions-key
+      description: Function key da Azure Functions.
+  schemas:
+    RegistrarAvaliacaoCommand:
+      type: object
+      required:
+        - descricao
+        - nota
+      properties:
+        descricao:
+          type: string
+          maxLength: 1000
+          description: Descrição da avaliação.
+          example: Aula muito confusa
+        nota:
+          type: integer
+          minimum: 0
+          maximum: 10
+          description: Nota de 0 a 10.
+          example: 2
+    AvaliacaoResponse:
+      type: object
+      required:
+        - id
+        - urgencia
+        - dataEnvio
+      properties:
+        id:
+          type: string
+          format: uuid
+        urgencia:
+          type: string
+          enum: [CRITICA, MEDIA, BAIXA]
+        dataEnvio:
+          type: string
+          format: date-time
+    ErroResponse:
+      type: object
+      properties:
+        erro:
+          type: string

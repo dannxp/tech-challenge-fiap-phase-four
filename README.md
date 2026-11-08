@@ -100,6 +100,18 @@ Exemplo de requisição:
 O endpoint utiliza Function Key quando executado na Azure. O contrato completo,
 incluindo respostas e validações, está em [docs/api.md](docs/api.md).
 
+### Swagger UI
+
+Também é possível testar a API pelo Swagger UI, sem Bruno ou Postman:
+
+```text
+https://<function-app-host>/api/swagger
+```
+
+Abra **Authorize**, informe a Function Key no campo `x-functions-key` e
+execute o endpoint `POST /api/avaliacao` pelo botão **Try it out**. O contrato
+OpenAPI está disponível em `/api/openapi.yaml`.
+
 ## Documentação
 
 - [Arquitetura](docs/arquitetura.md): decisões, componentes e fluxos da solução;
